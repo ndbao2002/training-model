@@ -1,0 +1,7 @@
+.idea
+__pycache__
+logs/*/*
+datasets/*/*
+pretrained/*/*
+logs/*.log
+pretrained/*.pt
