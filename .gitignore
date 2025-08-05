@@ -5,3 +5,4 @@ datasets/*/*
 pretrained/*/*
 logs/*.log
 pretrained/*.pt
+a.out
