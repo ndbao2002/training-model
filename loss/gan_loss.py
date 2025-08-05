@@ -3,7 +3,7 @@ import os
 from torch import nn
 import torch
 
-from model.discriminator_arch import UNetDiscriminatorSN
+from models.discriminator_arch import UNetDiscriminatorSN
 
 
 
