@@ -1,4 +1,5 @@
 import os
+from time import time
 from dataloader import TrainingDataset, TestingDataset
 from torchvision.utils import make_grid
 from torch.utils.data import DataLoader
@@ -7,11 +8,18 @@ import yaml
 
 from loss.content_loss import ContentLoss
 from loss.gan_loss import GANLoss
-from model.model_arch import SRPatchModel
+from models import *
 import torch
 from tqdm import tqdm
 
 from utils.tools import calc_psnr_and_ssim_torch_metric
+
+# Add argument parser
+import argparse
+parser = argparse.ArgumentParser(description='Training script for super-resolution models')
+parser.add_argument('--model', type=str, default='srunet', choices=['srunet', 'mambaunet'], help='Model to train')
+
+args = parser.parse_args()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
@@ -36,7 +44,23 @@ validloader = DataLoader(validation_dataset, batch_size=1)
 
 print('Creating Model ...')
 # Create the model
-model = SRPatchModel(in_channels=3)
+if args.model == 'srunet':
+    model = SRUNET(in_channels=3,
+            out_channels=3,
+            n_features=64,
+            dropout=0.2,
+            block_out_channels=[64, 64, 128, 128, 256],
+            layers_per_block=2)
+elif args.model == 'mambaunet':
+    model = MambaUnet(in_channels=3,
+            out_channels=3,
+            n_features=64,
+            dropout=0.2,
+            block_out_channels=[64, 64, 128],
+            layers_per_block=2,
+            num_middle_block=3)
+else:
+    raise ValueError(f"Model {config['train_model']['model']} is not supported")
 
 # Logging
 from torch.utils.tensorboard import SummaryWriter
@@ -44,9 +68,9 @@ writer = SummaryWriter(config['logger']['tensorboard'])
 
 import logging
 
-# C?u h�nh logging co b?n
+# Cấu hình logging cơ bản
 logging.basicConfig(
-    filename=config['logger']['logging'],
+    filename=os.path.join(config['logger']['logging'], args.model + '.log'),
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     force=True
@@ -59,8 +83,10 @@ iteration = 0
 max_epoch = config['train_model']['max_epoch']
 psnr_max = 0
 
+activate_checkpoint = config['train_model']['activate']
+
 checkpoint_path = config['train_model']['checkpoint']
-if checkpoint_path and os.path.isfile(checkpoint_path) and config['train_model']['activate']:
+if activate_checkpoint and checkpoint_path and os.path.isfile(checkpoint_path):
     checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['model'])
     start_point = checkpoint['epoch'] + 1
@@ -73,7 +99,7 @@ else:
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=config['train_model']['learning_rate'])
 
-content_loss = ContentLoss(types=['mae', 'mse'], weights=[1, 0])
+content_loss = ContentLoss(types=['mae'], weights=[1])
 
 print('Starting training ...')
 # Training model
@@ -142,8 +168,8 @@ for epoch in range(start_point, max_epoch):
                 'iteration': iteration - 1,
                 'psnr_max': psnr_max,
                 'model': model.state_dict()
-            }, os.path.join(config['train_model']['save_path'], f'best_model.pt') )
-            
+            }, os.path.join(config['train_model']['save_path'], args.model, f'best_model.pt'))
+
             os.makedirs(os.path.join(config['logger']['results'], str(epoch)), exist_ok=True)
             for filename, tensor_image in pics:
                 img_path = os.path.join(config['logger']['results'], str(epoch), filename)
@@ -156,7 +182,7 @@ for epoch in range(start_point, max_epoch):
             'iteration': iteration - 1,
             'psnr_max': psnr_max,
             'model': model.state_dict()
-        }, os.path.join(config['train_model']['save_path'], f'curr_model.pt') )
+        }, os.path.join(config['train_model']['save_path'], args.model, f'curr_model.pt'))
 
         
         writer.add_scalar('Testing/PSNR_max', psnr / len(validloader), epoch)
@@ -168,4 +194,4 @@ for epoch in range(start_point, max_epoch):
         writer.add_scalar('Testing/SSIM', ssim/len(validloader), epoch)
 
         print(f"Epoch: {epoch} | PSNR: {psnr / len(validloader)} | SSIM: {ssim / len(validloader)} | Max_Epoch: {max_psnr_epoch} | PSNR_max: {psnr_max}")
-        logging.info(f"Epoch: {epoch} | PSNR: {psnr / len(validloader)} | SSIM: {ssim / len(validloader)} | Max_Epoch: {max_psnr_epoch} | PSNR_max: {psnr_max}")
+        logging.info(f"Time: {time.strftime('%Y-%m-%d %H:%M:%S')} | Epoch: {epoch} | PSNR: {psnr / len(validloader)} | SSIM: {ssim / len(validloader)} | Max_Epoch: {max_psnr_epoch} | PSNR_max: {psnr_max}")
