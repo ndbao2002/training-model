@@ -160,8 +160,10 @@ for epoch in range(start_point, max_epoch):
             pics.append((filename[0], images))
 
         if psnr/len(validloader) > psnr_max:
-            
-            psnr_max = max(psnr/len(validloader), psnr_max) 
+            if not os.path.exists(os.path.join(config['train_model']['save_path'], args.model)):
+                os.makedirs(os.path.join(config['train_model']['save_path'], args.model))
+
+            psnr_max = max(psnr/len(validloader), psnr_max)
             max_psnr_epoch = epoch
             torch.save({
                 'epoch': epoch,
