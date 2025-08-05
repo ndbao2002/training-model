@@ -7,7 +7,7 @@ train_dataset:
   repeat: 1
 val_dataset: /media02/btlen05/ndbao/dataset/datasets/benchmark/Set14/HR
 
-training_batch_size: 16
+training_batch_size: 8
 
 logger:
   tensorboard: logs/tensorboard
