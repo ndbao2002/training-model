@@ -1,5 +1,5 @@
 import os
-from time import time
+import time
 from dataloader import TrainingDataset, TestingDataset
 from torchvision.utils import make_grid
 from torch.utils.data import DataLoader
@@ -109,6 +109,7 @@ model = model.to(device)
 for epoch in range(start_point, max_epoch):
     progress_bar = tqdm(trainloader, total=len(trainloader))
     progress_bar.set_description(f"Epoch {epoch}")
+    model.train(True)
 
     writer.add_scalar('ATraining/LR', config['train_model']['learning_rate'], epoch)
 
@@ -118,7 +119,6 @@ for epoch in range(start_point, max_epoch):
         img_pred = model(img_lr)
 
         # Train Generator
-        model.train(True)
         img_pred = model(img_lr)
         loss_content, loss_content_info = content_loss(img_pred, img_hr)
         # loss_gan = gan_loss(img_pred)
@@ -149,9 +149,9 @@ for epoch in range(start_point, max_epoch):
             img_lr, img_hr = img_lr.to(device), img_hr.to(device)
             # Padding
             img_lr, mod_pad_h, mod_pad_w = find_padding(img_lr, window_size=2**4)
-            start_infer = time()
+            start_infer = time.time()
             img_pred = model(img_lr).clip(0, 1)
-            infer_time = time() - start_infer
+            infer_time = time.time() - start_infer
             inference_times.append(infer_time)
             img_pred = remove_padding(img_pred, mod_pad_h, mod_pad_w)
             img_lr = remove_padding(img_lr, mod_pad_h, mod_pad_w)
