@@ -154,6 +154,7 @@ for epoch in range(start_point, max_epoch):
             infer_time = time() - start_infer
             inference_times.append(infer_time)
             img_pred = remove_padding(img_pred, mod_pad_h, mod_pad_w)
+            img_lr = remove_padding(img_lr, mod_pad_h, mod_pad_w)
             # print(filename, img_pred.shape, img_hr.shape, img_lr.shape)
 
             psnr_img, ssim_img = calc_psnr_and_ssim_torch_metric(img_hr, img_pred, shaved=4)
