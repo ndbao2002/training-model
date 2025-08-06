@@ -13,7 +13,6 @@ def find_padding(x, window_size):
     x = F.pad(x, (0, mod_pad_w, 0, mod_pad_h), 'reflect')
     return x, mod_pad_h, mod_pad_w
 
-
 def remove_padding(x_padded, mod_pad_h, mod_pad_w):
     if mod_pad_h > 0:
         x_padded = x_padded[:, :, :-mod_pad_h, :]
