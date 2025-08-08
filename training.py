@@ -4,7 +4,7 @@ from dataloader import TrainingDataset, TestingDataset
 from models.lora_utils import freeze_model, freeze_model_except_lora, replace_resblocks_with_lora
 from models.swinir import SwinIR
 from models.srunet import SRUNET
-from models.mambaunet import MambaUnet
+from models.mambaunet import MAMBAUNET
 from torchvision.utils import make_grid
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -64,13 +64,13 @@ if args.model == 'srunet':
             layers_per_block=4,
             is_attn_layers=(False, False, True, False))
 elif args.model == 'mambaunet':
-    model = MambaUnet(in_channels=3,
+    model = MAMBAUNET(in_channels=3,
             out_channels=3,
             n_features=64,
-            dropout=0.2,
-            block_out_channels=[64, 64, 128],
-            layers_per_block=2,
-            num_middle_block=3)
+            dropout=0.1,
+            block_out_channels=[64, 128, 128, 256],
+            layers_per_block=4,
+            is_attn_layers=(False, False, True, True))
 else:
     raise ValueError(f"Model {config['train_model']['model']} is not supported")
 
