@@ -110,7 +110,7 @@ elif args.lora:
     checkpoint = torch.load(args.original, map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['best_model_state_dict'])
 
-    replace_resblocks_with_lora(model, lora_rank=args.lora_rank, lora_alpha=args.lora_alpha)
+    replace_resblocks_with_lora(model, lora_r=args.lora_rank, lora_alpha=args.lora_alpha)
     freeze_model_except_lora(model)
     print(f'Inject LoRA into model: lora_rank = {args.lora_rank}, lora_alpha = {args.lora_alpha}')
 else:
