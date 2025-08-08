@@ -1,7 +1,7 @@
 import os
 import time
 from dataloader import TrainingDataset, TestingDataset
-from models.lora_utils import freeze_model, freeze_model_except_lora, inject_lora_residual_block
+from models.lora_utils import freeze_model, freeze_model_except_lora, replace_resblocks_with_lora
 from models.swinir import SwinIR
 from models.srunet import SRUNET
 from models.mambaunet import MambaUnet
@@ -110,7 +110,7 @@ elif args.lora:
     checkpoint = torch.load(args.original, map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['best_model_state_dict'])
 
-    inject_lora_residual_block(model, lora_rank=args.lora_rank, lora_alpha=args.lora_alpha)
+    replace_resblocks_with_lora(model, lora_rank=args.lora_rank, lora_alpha=args.lora_alpha)
     freeze_model_except_lora(model)
     print(f'Inject LoRA into model: lora_rank = {args.lora_rank}, lora_alpha = {args.lora_alpha}')
 else:
