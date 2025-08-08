@@ -80,6 +80,7 @@ class ContentLoss(nn.Module):
 
         if teacher_model is not None:
             self.teacher_model = teacher_model.to(self.device)
+            self.teacher_model.eval()
         else:
             self.teacher_model = None
 
