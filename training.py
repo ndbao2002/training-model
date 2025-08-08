@@ -123,7 +123,7 @@ if 'distil' in ''.join(args.loss):
     teacher_model = SwinIR(upscale=4, in_chans=3, img_size=64, window_size=8,
                     img_range=1., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
                     mlp_ratio=2, upsampler='pixelshuffle', resi_connection='1conv')
-    teacher_model.load_state_dict(torch.load(args.distil_path, map_location=torch.device('cpu')), strict=True)
+    teacher_model.load_state_dict(torch.load(args.distil_path, map_location=torch.device('cpu'))['params'], strict=True)
     freeze_model(teacher_model)
 content_loss = ContentLoss(types=args.loss, weights=args.loss_weight, teacher_model=teacher_model)
 
