@@ -22,7 +22,7 @@ from utils.tools import calc_psnr_and_ssim_torch_metric
 import argparse
 parser = argparse.ArgumentParser(description='Training script for super-resolution models')
 parser.add_argument('--model', type=str, default='srunet', choices=['srunet', 'mambaunet'], help='Model to train', required=True)
-parser.add_argument('--loss', type=str, nargs='+', default=['l1'], help='Loss function to use', required=True)
+parser.add_argument('--loss', type=str, nargs='+', default=['mae'], help='Loss function to use', required=True)
 parser.add_argument('--loss_weight', type=float, nargs='+', default=[1.0], help='Loss weights for each loss function', required=True)
 parser.add_argument('--lora', action='store_true', help='Use LoRA for training')
 parser.add_argument('--lora_rank', type=int, default=4, help='Rank for LoRA layers')
