@@ -107,7 +107,7 @@ if activate_checkpoint and checkpoint_path and os.path.isfile(checkpoint_path):
     print(f'Load checkpoint from {checkpoint_path}: start_point = {start_point}, iteration = {iteration}')
 elif args.lora:
     checkpoint = torch.load(args.original, map_location=torch.device('cpu'))
-    model.load_state_dict(checkpoint['model'])
+    model.load_state_dict(checkpoint)
 
     inject_lora_residual_block(model, lora_rank=args.lora_rank, lora_alpha=args.lora_alpha)
     freeze_model_except_lora(model)
