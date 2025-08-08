@@ -25,3 +25,7 @@ def inject_lora_residual_block(model, lora_rank=4, lora_alpha=1.0):
 def freeze_model_except_lora(model):
     for name, param in model.named_parameters():
         param.requires_grad = "lora_" in name
+
+def freeze_model(model):
+    for name, param in model.named_parameters():
+        param.requires_grad = False

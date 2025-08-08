@@ -1,8 +1,10 @@
 import os
 import time
 from dataloader import TrainingDataset, TestingDataset
-from models.lora_utils import freeze_model_except_lora, inject_lora_residual_block
+from models.lora_utils import freeze_model, freeze_model_except_lora, inject_lora_residual_block
 from models.swinir import SwinIR
+from models.srunet import SRUNET
+from models.mambaunet import MambaUnet
 from torchvision.utils import make_grid
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -10,8 +12,7 @@ import yaml
 
 from utils.tools import find_padding, remove_padding
 from loss.content_loss import ContentLoss
-from loss.gan_loss import GANLoss
-from models import *
+# from loss.gan_loss import GANLoss
 import torch
 from tqdm import tqdm
 
@@ -122,6 +123,7 @@ if 'distil' in ''.join(args.loss):
                     img_range=1., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
                     mlp_ratio=2, upsampler='pixelshuffle', resi_connection='1conv')
     teacher_model.load_state_dict(torch.load(args.distil_path, map_location=torch.device('cpu')), strict=True)
+    freeze_model(teacher_model)
 content_loss = ContentLoss(types=args.loss, weights=args.loss_weight, teacher_model=teacher_model)
 
 print('Starting training ...')
