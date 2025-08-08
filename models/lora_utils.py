@@ -1,6 +1,6 @@
 from torch import nn
 from typing import Callable
-from srunet import ResidualBlock, ResidualBlockLora
+from .srunet import ResidualBlock, ResidualBlockLora
 
 def inject_lora_residual_block(model, lora_rank=4, lora_alpha=1.0):
     for name, module in model.named_children():
