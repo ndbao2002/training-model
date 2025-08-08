@@ -31,8 +31,8 @@ def replace_resblocks_with_lora(module: nn.Module,
             new_block.norm2.load_state_dict(child.norm2.state_dict())
 
             # Copy Conv2d weights into base layers of LoRAConv2d
-            new_block.conv1.load_state_dict(child.conv1.state_dict())
-            new_block.conv2.load_state_dict(child.conv2.state_dict())
+            new_block.conv1.conv.load_state_dict(child.conv1.state_dict())
+            new_block.conv2.conv.load_state_dict(child.conv2.state_dict())
 
             # Copy shortcut if it's a Conv2d
             if isinstance(child.shortcut, nn.Conv2d) and isinstance(new_block.shortcut, nn.Conv2d):
