@@ -12,7 +12,7 @@ from utils.matlab_functions import imresize
 
 
 class TrainingDataset(Dataset):
-    def __init__(self, root_paths, inp_size=(120, 120), repeat=1):
+    def __init__(self, root_paths, inp_size=(120, 120), repeat=1, scale=4):
         self.transform = transforms.Compose([
             transforms.RandomCrop(inp_size), #(h, w)
             transforms.RandomHorizontalFlip(),
@@ -28,6 +28,7 @@ class TrainingDataset(Dataset):
         self.inp_size = inp_size
         self.repeat = repeat
         self.files = []
+        self.scale = scale
 
         for root_path in root_paths.split('+'):
             self.files += glob.glob(root_path + "/*")
@@ -48,16 +49,20 @@ class TrainingDataset(Dataset):
         
         img_hr = self.transform(img_hr)
         
-        scale = np.random.uniform(1, 4.5)
+        if self.scale:
+            scale = self.scale
+        else:
+            scale = np.random.uniform(1, 4.5)
 
         h_hr, w_hr = self.inp_size
         img_lr = img_hr.resize((int(h_hr/scale), int(w_hr/scale)), resample=Image.BICUBIC)
-        img_lr = img_lr.resize((h_hr, w_hr), resample=Image.BICUBIC)
+        img_lr_bicubic = img_lr.resize((h_hr, w_hr), resample=Image.BICUBIC)
 
         img_hr = self.to_tensor(img_hr)
         img_lr = self.to_tensor(img_lr)
+        img_lr_bicubic = self.to_tensor(img_lr_bicubic)
 
-        return img_lr, img_hr
+        return img_lr, img_lr_bicubic, img_hr
 
 class TestingDataset(Dataset):
     def __init__(self, hr_root):

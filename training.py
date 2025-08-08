@@ -1,6 +1,8 @@
 import os
 import time
 from dataloader import TrainingDataset, TestingDataset
+from models.lora_utils import freeze_model_except_lora, inject_lora_residual_block
+from models.swinir import SwinIR
 from torchvision.utils import make_grid
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -18,7 +20,14 @@ from utils.tools import calc_psnr_and_ssim_torch_metric
 # Add argument parser
 import argparse
 parser = argparse.ArgumentParser(description='Training script for super-resolution models')
-parser.add_argument('--model', type=str, default='srunet', choices=['srunet', 'mambaunet'], help='Model to train')
+parser.add_argument('--model', type=str, default='srunet', choices=['srunet', 'mambaunet'], help='Model to train', required=True)
+parser.add_argument('--loss', type=str, nargs='+', default=['l1'], help='Loss function to use', required=True)
+parser.add_argument('--loss_weight', type=float, nargs='+', default=[1.0], help='Loss weights for each loss function', required=True)
+parser.add_argument('--lora', action='store_true', help='Use LoRA for training')
+parser.add_argument('--lora_rank', type=int, default=4, help='Rank for LoRA layers')
+parser.add_argument('--lora_alpha', type=float, default=1.0, help='Alpha for LoRA layers')
+parser.add_argument('--original', type=str, default='', help='Path to original model checkpoint (if using LoRA)')
+parser.add_argument('--distil_path', type=str, default='', help='Path to teacher model checkpoint (if using distillation)')
 
 args = parser.parse_args()
 
@@ -28,7 +37,7 @@ print(device)
 config = yaml.load(open('config/config.yml', 'r'), Loader=yaml.FullLoader)
 
 print('Creating Dataloader ...')
-# Training dataloder
+# Training dataloader
 training_dataset = TrainingDataset(root_paths=config['train_dataset']['root_paths'],
                                    inp_size=config['train_dataset']['inp_size'],
                                    repeat=config['train_dataset']['repeat'])
@@ -36,10 +45,10 @@ training_dataset = TrainingDataset(root_paths=config['train_dataset']['root_path
 trainloader = DataLoader(training_dataset,
                          batch_size= config['training_batch_size'],
                          shuffle=True,
-                         num_workers=4)
+                         num_workers=2)
 
 
-# Validation dataloder
+# Validation dataloader
 validation_dataset = TestingDataset(hr_root=config['val_dataset'])
 validloader = DataLoader(validation_dataset, batch_size=1)
 
@@ -95,12 +104,25 @@ if activate_checkpoint and checkpoint_path and os.path.isfile(checkpoint_path):
     psnr_max = checkpoint['psnr_max']
     max_psnr_epoch = checkpoint['epoch']
     print(f'Load checkpoint from {checkpoint_path}: start_point = {start_point}, iteration = {iteration}')
+elif args.lora:
+    checkpoint = torch.load(args.original, map_location=torch.device('cpu'))
+    model.load_state_dict(checkpoint['model'])
+
+    inject_lora_residual_block(model, lora_rank=args.lora_rank, lora_alpha=args.lora_alpha)
+    freeze_model_except_lora(model)
+    print(f'Inject LoRA into model: lora_rank = {args.lora_rank}, lora_alpha = {args.lora_alpha}')
 else:
     print('Starting new model')
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=config['train_model']['learning_rate'])
 
-content_loss = ContentLoss(types=['mae'], weights=[1])
+teacher_model = None
+if 'distil' in ''.join(args.loss):
+    teacher_model = SwinIR(upscale=4, in_chans=3, img_size=64, window_size=8,
+                    img_range=1., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
+                    mlp_ratio=2, upsampler='pixelshuffle', resi_connection='1conv')
+    teacher_model.load_state_dict(torch.load(args.distil_path, map_location=torch.device('cpu')), strict=True)
+content_loss = ContentLoss(types=args.loss, weights=args.loss_weight, teacher_model=teacher_model)
 
 print('Starting training ...')
 # Training model
@@ -113,14 +135,14 @@ for epoch in range(start_point, max_epoch):
 
     writer.add_scalar('ATraining/LR', config['train_model']['learning_rate'], epoch)
 
-    for img_lr, img_hr in progress_bar:
+    for img_lr, img_lr_bicubic, img_hr in progress_bar:
 
-        img_lr, img_hr = img_lr.to(device), img_hr.to(device)
-        img_pred = model(img_lr)
+        img_lr, img_lr_bicubic, img_hr = img_lr.to(device), img_lr_bicubic.to(device), img_hr.to(device)
+        img_pred = model(img_lr_bicubic)
 
         # Train Generator
-        img_pred = model(img_lr)
-        loss_content, loss_content_info = content_loss(img_pred, img_hr)
+        img_pred = model(img_lr_bicubic)
+        loss_content, loss_content_info = content_loss(img_pred, img_hr, img_lr)
         # loss_gan = gan_loss(img_pred)
 
         loss = loss_content #+ 10**-3*loss_gan

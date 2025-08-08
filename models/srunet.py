@@ -60,6 +60,18 @@ class ResidualBlock(nn.Module):
     def forward(self, x: torch.Tensor):
         return self.shortcut(x) + self.model(x)
     
+class ResidualBlockLora(ResidualBlock):
+    def __init__(self, in_channels, out_channels, n_groups=32, dropout=0.1, lora_rank=4, lora_alpha=1.0):
+        super().__init__(in_channels, out_channels, n_groups, dropout)
+        self.lora_down = nn.Conv2d(in_channels, lora_rank, kernel_size=1, bias=False)
+        self.lora_up = nn.Conv2d(lora_rank, out_channels, kernel_size=1, bias=False)
+        self.scaling = lora_alpha / lora_rank
+        nn.init.kaiming_uniform_(self.lora_down.weight, a=5**0.5)
+        nn.init.zeros_(self.lora_up.weight)
+
+    def forward(self, x):
+        return super().forward(x) + self.scaling * self.lora_up(self.lora_down(x))
+
 class BasicBlock(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, n_blocks: int, dropout: int):
         super().__init__()

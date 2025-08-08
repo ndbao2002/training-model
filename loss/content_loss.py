@@ -71,14 +71,19 @@ def edge_detection(images: torch.Tensor):
     return images_edges
 
 class ContentLoss(nn.Module):
-    def __init__(self, types=['mse', 'mae', 'perceptual', 'mae_edge'], weights=[1, 1, 1, 1, 1, 1]):
+    def __init__(self, types=['mse', 'mae', 'perceptual', 'mae_edge', 'distillation_mse', 'distillation_mae'], weights=[1, 1, 1, 1, 1, 1], teacher_model=None):
         super(ContentLoss, self).__init__()
 
         self.types = types
         self.weights = weights
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    def forward(self, hr_pred, hr):
+        if teacher_model is not None:
+            self.teacher_model = teacher_model.to(self.device)
+        else:
+            self.teacher_model = None
+
+    def forward(self, hr_pred, hr, lr=None):
         loss = 0
         loss_type = {}
 
@@ -97,6 +102,14 @@ class ContentLoss(nn.Module):
                 edge_pred = edge_detection(edge_pred)
                 l = nn.L1Loss()(edge_pred, edge_gt)
                 loss_type['mae_edge'] = l.item()
+            elif loss_type_name == 'distillation_mse':
+                teacher_output = self.teacher_model(lr).detach()
+                l = nn.MSELoss()(hr_pred, teacher_output)
+                loss_type['distillation_mse'] = l.item()
+            elif loss_type_name == 'distillation_mae':
+                teacher_output = self.teacher_model(lr).detach()
+                l = nn.L1Loss()(hr_pred, teacher_output)
+                loss_type['distillation_mae'] = l.item()
             else:
                 raise ValueError(f"Unknown loss type: {loss_type_name}")
 

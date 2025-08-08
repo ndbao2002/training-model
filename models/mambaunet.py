@@ -35,7 +35,47 @@ class ResidualBlock(nn.Module):
 
     def forward(self, x: torch.Tensor):
         return self.shortcut(x) + self.model(x)
-    
+
+# Channel Attention (CA) Layer
+class CALayer(nn.Module):
+    def __init__(self, channel, reduction=16):
+        super(CALayer, self).__init__()
+        # global average pooling: feature --> point
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        # feature channel downscale and upscale --> channel weight
+        self.conv_du = nn.Sequential(
+                nn.Conv2d(channel, channel // reduction, 1, padding=0, bias=True),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(channel // reduction, channel, 1, padding=0, bias=True),
+                nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        y = self.avg_pool(x)
+        y = self.conv_du(y)
+        return x * y
+
+# Channel Attention (CBAM style) Layer
+class CBAMLayer(nn.Module):
+    def __init__(self, channels, reduction=16):
+        super(CBAMLayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+
+        # Shared MLP
+        self.mlp = nn.Sequential(
+            nn.Conv2d(channels, channels // reduction, 1, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channels // reduction, channels, 1, bias=False)
+        )
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avg_out = self.mlp(self.avg_pool(x))
+        max_out = self.mlp(self.max_pool(x))
+        out = avg_out + max_out
+        return x * self.sigmoid(out)
+
 class SS2D(nn.Module):
     def __init__(
             self,
@@ -235,7 +275,7 @@ class VSSBlock(nn.Module):
         self.self_attention = SS2D(d_model=in_channels, d_state=d_state,expand=expand, **kwargs)
         self.drop_path = DropPath(drop_path)
         self.skip_scale= nn.Parameter(torch.ones(in_channels))
-        self.conv_blk = ResidualBlock(in_channels,in_channels)
+        self.conv_blk = CBAMLayer(in_channels)
         self.ln_2 = nn.LayerNorm(in_channels)
         self.skip_scale2 = nn.Parameter(torch.ones(in_channels))
 
