@@ -59,9 +59,10 @@ if args.model == 'srunet':
     model = SRUNET(in_channels=3,
             out_channels=3,
             n_features=64,
-            dropout=0.2,
-            block_out_channels=[64, 64, 128, 128, 256],
-            layers_per_block=2)
+            dropout=0.1,
+            block_out_channels=[64, 128, 128, 256],
+            layers_per_block=4,
+            is_attn_layers=(False, False, True, False))
 elif args.model == 'mambaunet':
     model = MambaUnet(in_channels=3,
             out_channels=3,
