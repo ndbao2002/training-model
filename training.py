@@ -2,6 +2,7 @@ import os
 import time
 from dataloader import TrainingDataset, TestingDataset
 from models.lora_utils import freeze_model, freeze_model_except_lora, replace_resblocks_with_lora
+from models.quantization import dynamic_quantization, static_quantization
 from models.swinir import SwinIR
 from models.srunet import SRUNET
 from models.mambaunet import MAMBAUNET
@@ -27,6 +28,7 @@ parser.add_argument('--loss_weight', type=float, nargs='+', default=[1.0], help=
 parser.add_argument('--lora', action='store_true', help='Use LoRA for training')
 parser.add_argument('--lora_rank', type=int, default=4, help='Rank for LoRA layers')
 parser.add_argument('--lora_alpha', type=float, default=1.0, help='Alpha for LoRA layers')
+parser.add_argument('--quantization', type=str, default='', help='Quantization method to use')
 parser.add_argument('--original', type=str, default='', help='Path to original model checkpoint (if using LoRA)')
 parser.add_argument('--distil_path', type=str, default='', help='Path to teacher model checkpoint (if using distillation)')
 
@@ -115,6 +117,11 @@ elif args.lora:
     print(f'Inject LoRA into model: lora_rank = {args.lora_rank}, lora_alpha = {args.lora_alpha}')
 else:
     print('Starting new model')
+model = model.to(device)
+
+if args.quantization == 'aware':
+    model.qconfig = torch.quantization.get_default_qat_qconfig('fbgemm')
+    model = torch.quantization.prepare_qat(model)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=config['train_model']['learning_rate'])
 
@@ -129,8 +136,6 @@ content_loss = ContentLoss(types=args.loss, weights=args.loss_weight, teacher_mo
 
 print('Starting training ...')
 # Training model
-model = model.to(device)
-
 for epoch in range(start_point, max_epoch):
     progress_bar = tqdm(trainloader, total=len(trainloader))
     progress_bar.set_description(f"Epoch {epoch}")
