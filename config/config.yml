@@ -1,6 +1,6 @@
 train_dataset:
   name: div2k
-  root_paths: /media02/btlen05/ndbao/dataset/datasets/TrainingDataset/DIV2K/DIV2K_train_HR/DIV2K_train_HR+/media02/btlen05/ndbao/dataset/datasets/TrainingDataset/FLICKR
+  root_paths: /media02/btlen05/ndbao/dataset/datasets/TrainingDataset/DIV2K/DIV2K_train_HR/DIV2K_train_HR+/media02/btlen05/ndbao/dataset/datasets/TrainingDataset/Flickr2K
   inp_size:
     - 128
     - 128
