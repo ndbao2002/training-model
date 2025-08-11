@@ -246,9 +246,9 @@ for epoch in range(start_point, max_epoch):
                 'model': model.state_dict()
             }, os.path.join(config['train_model']['save_path'], args.exp_name, f'best_model.pt'))
 
-            os.makedirs(os.path.join(config['logger']['results'], str(epoch)), exist_ok=True)
+            os.makedirs(os.path.join(config['logger']['logging'], args.exp_name, str(epoch)), exist_ok=True)
             for filename, tensor_image in pics:
-                img_path = os.path.join(config['logger']['results'], str(epoch), filename)
+                img_path = os.path.join(config['logger']['logging'], args.exp_name, str(epoch), filename)
                 image = transforms.ToPILImage()(tensor_image)
                 os.makedirs(os.path.dirname(img_path), exist_ok=True)
                 image.save(img_path)
