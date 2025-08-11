@@ -12,7 +12,7 @@ from utils.matlab_functions import imresize
 
 
 class TrainingDataset(Dataset):
-    def __init__(self, root_paths, inp_size=(120, 120), repeat=1, scale=4):
+    def __init__(self, root_paths, inp_size=(128, 128), repeat=1, scale=4):
         self.transform = transforms.Compose([
             transforms.RandomCrop(inp_size), #(h, w)
             transforms.RandomHorizontalFlip(),
@@ -65,8 +65,9 @@ class TrainingDataset(Dataset):
         return img_lr, img_lr_bicubic, img_hr
 
 class TestingDataset(Dataset):
-    def __init__(self, hr_root):
+    def __init__(self, hr_root, scale):
         self.hr_files = sorted(glob.glob(hr_root + "/*"))
+        self.scale = scale
 
         self.transform = transforms.Compose([
             transforms.ToImage(),
@@ -81,10 +82,10 @@ class TestingDataset(Dataset):
         img_hr = Image.open(self.hr_files[idx]).convert("RGB")
 
         h_hr, w_hr = img_hr.size
-        h_hr, w_hr = h_hr//4*4, w_hr//4*4
+        h_hr, w_hr = h_hr//self.scale*self.scale, w_hr//self.scale*self.scale
         
         img_hr = Image.fromarray(np.array(img_hr)[:w_hr, :h_hr, ...]) 
-        img_lr = img_hr.resize((h_hr//4, w_hr//4), resample=Image.BICUBIC)
+        img_lr = img_hr.resize((h_hr//self.scale, w_hr//self.scale), resample=Image.BICUBIC)
         img_lr = img_lr.resize((h_hr, w_hr), resample=Image.BICUBIC)
 
 

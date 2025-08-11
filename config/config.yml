@@ -1,13 +1,13 @@
 train_dataset:
   name: div2k
-  root_paths: /media02/btlen05/ndbao/dataset/datasets/TrainingDataset/DIV2K/DIV2K_train_HR/DIV2K_train_HR
+  root_paths: /media02/btlen05/ndbao/dataset/datasets/TrainingDataset/DIV2K/DIV2K_train_HR/DIV2K_train_HR+/media02/btlen05/ndbao/dataset/datasets/TrainingDataset/FLICKR
   inp_size:
     - 128
     - 128
-  repeat: 1
+  repeat: 5
 val_dataset: /media02/btlen05/ndbao/dataset/datasets/benchmark/Set14/HR
 
-training_batch_size: 8
+training_batch_size: 16
 
 logger:
   tensorboard: logs/tensorboard
@@ -17,6 +17,6 @@ logger:
 train_model:
   learning_rate: 0.001
   checkpoint: pretrained/best_model.pt
-  max_epoch: 5
+  max_epoch: 100
   save_path: pretrained
   activate: False
