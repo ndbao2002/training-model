@@ -139,12 +139,12 @@ class MiddleBlock(nn.Module):
 
 
 class Downsample(nn.Module):
-    def __init__(self, n_channels, downtype='1x1'):
+    def __init__(self, n_channels, downtype='conv_1x1'):
         super().__init__()
-        if downtype == '3x3':
+        if downtype == 'conv_3x3':
             self.conv = nn.Conv2d(n_channels, n_channels,
                                 kernel_size=3, stride=2, padding=1)
-        elif downtype == '1x1':
+        elif downtype == 'conv_1x1':
             self.conv = nn.Conv2d(n_channels, n_channels,
                                 kernel_size=1, stride=2, padding=0)
         else:
@@ -202,7 +202,7 @@ class SRUNET_SMALL(nn.Module):
                 layers_per_block=4,
                 is_attn_layers=(False, False, False, False),
                 upsample_type='pixelshuffle_1x1',
-                downsample_type='1x1',
+                downsample_type='conv_1x1',
                 ):
         super().__init__()
 

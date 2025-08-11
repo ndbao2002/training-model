@@ -34,7 +34,7 @@ parser.add_argument('--scale', type=int, default=4, help='Scale factor for super
 # Checkpoint - Model specific settings
 parser.add_argument('--checkpoint', type=str, default='', help='Path to model checkpoint for resuming training')
 parser.add_argument('--uptype', type=str, default='pixelshuffle_1x1', help='Upsampling type')
-parser.add_argument('--downtype', type=str, default='1x1', help='Downsampling type')
+parser.add_argument('--downtype', type=str, default='conv_1x1', help='Downsampling type')
 
 # Additional settings
 parser.add_argument('--lora', action='store_true', help='Use LoRA for training')
