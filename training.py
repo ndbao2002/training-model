@@ -165,6 +165,11 @@ if 'distil' in ''.join(args.loss):
     freeze_model(teacher_model)
 content_loss = ContentLoss(types=args.loss, weights=args.loss_weight, teacher_model=teacher_model)
 
+# Add lr_scheduler
+lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[250, 400, 450, 475, 500], gamma=0.5)
+for _ in range(start_point):
+    lr_scheduler.step()
+
 print('Starting training ...')
 # Training model
 for epoch in range(start_point, max_epoch):
@@ -197,6 +202,7 @@ for epoch in range(start_point, max_epoch):
 
         iteration += 1
         # break
+    lr_scheduler.step()
 
     model.eval()
     with torch.no_grad():
