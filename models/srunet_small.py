@@ -126,16 +126,14 @@ class UpBlock(nn.Module):
 
 
 class MiddleBlock(nn.Module):
-    def __init__(self, n_channels: int, dropout: int):
+    def __init__(self, n_channels: int, dropout: int, num_layers: int):
         super().__init__()
-        self.res1 = ResidualBlock(
-            n_channels, n_channels, dropout=dropout, has_attn=True)
-        self.res2 = ResidualBlock(n_channels, n_channels, dropout=dropout)
+        self.model = nn.Sequential(
+            *[ResidualBlock(n_channels, n_channels, dropout=dropout, has_attn=False) for _ in range(num_layers)]
+        )
 
     def forward(self, x: torch.Tensor):
-        x = self.res1(x)
-        x = self.res2(x)
-        return x
+        return self.model(x)
 
 
 class Downsample(nn.Module):
@@ -227,7 +225,7 @@ class SRUNET_SMALL(nn.Module):
 
         self.left_model = self.left_unet()
         self.middle_model = MiddleBlock(
-            block_out_channels[-1], dropout=self.dropout)
+            block_out_channels[-1], dropout=self.dropout, num_layers=layers_per_block)
         self.right_model = self.right_unet()
 
     def left_unet(self):

@@ -35,6 +35,7 @@ parser.add_argument('--scale', type=int, default=4, help='Scale factor for super
 parser.add_argument('--checkpoint', type=str, default='', help='Path to model checkpoint for resuming training')
 parser.add_argument('--uptype', type=str, default='pixelshuffle_1x1', help='Upsampling type')
 parser.add_argument('--downtype', type=str, default='conv_1x1', help='Downsampling type')
+parser.add_argument('--dropout', type=float, default=0.0, help='Dropout rate')
 
 # Additional settings
 parser.add_argument('--lora', action='store_true', help='Use LoRA for training')
@@ -90,7 +91,7 @@ elif args.model == 'srunet_small':
     model = SRUNET_SMALL(in_channels=3,
             out_channels=3,
             n_features=64,
-            dropout=0.1,
+            dropout=args.dropout,
             block_out_channels=[64, 128, 128],
             layers_per_block=4,
             is_attn_layers=(False, False, False),
