@@ -59,7 +59,9 @@ class ResidualBlock(nn.Module):
                  out_channels: int,
                  dropout: float,
                  n_groups: int = 32,
-                 has_attn: bool = False,):
+                 has_attn: bool = False,
+                 adaptive_weight: bool = True,
+                 fixed_weight_value: float = 1.0):
         super().__init__()
 
         self.cbam1 = CBAMLayer(in_channels)
@@ -73,7 +75,10 @@ class ResidualBlock(nn.Module):
             if in_channels != out_channels else nn.Identity()
 
         self.attn = AttentionBlock(out_channels) if has_attn else nn.Identity()
-        self.weight = nn.Parameter(torch.ones(1))
+        if adaptive_weight:
+            self.weight = nn.Parameter(torch.ones(1))
+        else:
+            self.weight = fixed_weight_value
 
     def forward(self, x):
         h = self.cbam1(x)
@@ -81,55 +86,49 @@ class ResidualBlock(nn.Module):
         h = self.dropout(h)
         h = self.cbam2(h)
         return self.attn(h) + self.shortcut(x) * self.weight
-    
-class LoRAConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, r=4, alpha=1.0,
-                 stride=1, padding=1, bias=True):
-        super().__init__()
-        self.r = r
-        self.alpha = alpha
-        self.scaling = alpha / r
-
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size,
-                              stride=stride, padding=padding, bias=bias)
-        for param in self.conv.parameters():
-            param.requires_grad = False
-
-        self.lora_A = nn.Conv2d(in_channels, r, kernel_size=1, bias=False)
-        self.lora_B = nn.Conv2d(r, out_channels, kernel_size=1, bias=False)
-
-        nn.init.kaiming_uniform_(self.lora_A.weight, a=5**0.5)
-        nn.init.zeros_(self.lora_B.weight)
-
-    def forward(self, x):
-        return self.conv(x) + self.scaling * self.lora_B(self.lora_A(x))
-
 
 class DownBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, has_attn: bool, dropout: int):
+    def __init__(self, in_channels: int, out_channels: int, has_attn: bool, dropout: int, adaptive_weight: bool = True, fixed_weight_value: float = 1.0):
         super().__init__()
         self.res = ResidualBlock(
-            in_channels, out_channels, dropout=dropout, has_attn=has_attn)
+            in_channels, 
+            out_channels, 
+            dropout=dropout, 
+            has_attn=has_attn,
+            adaptive_weight=adaptive_weight,
+            fixed_weight_value=fixed_weight_value
+        )
 
     def forward(self, x: torch.Tensor):
         return self.res(x)
 
 
 class UpBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, has_attn: bool, dropout: int):
+    def __init__(self, in_channels: int, out_channels: int, has_attn: bool, dropout: int, adaptive_weight: bool = True, fixed_weight_value: float = 1.0):
         super().__init__()
         self.res = ResidualBlock(
-            in_channels, out_channels, dropout=dropout, has_attn=has_attn)
+            in_channels, 
+            out_channels, 
+            dropout=dropout, 
+            has_attn=has_attn,
+            adaptive_weight=adaptive_weight,
+            fixed_weight_value=fixed_weight_value
+        )
 
     def forward(self, x: torch.Tensor):
         return self.res(x)
 
 
 class MiddleBlock(nn.Module):
-    def __init__(self, n_channels: int, dropout: int, num_layers: int):
+    def __init__(self, n_channels: int, dropout: int, num_layers: int, adaptive_weight: bool = True, fixed_weight_value: float = 1.0, bottleneck_attention: bool = False):
         super().__init__()
         self.model = nn.Sequential(
-            *[ResidualBlock(n_channels, n_channels, dropout=dropout, has_attn=False) for _ in range(num_layers)]
+            *[ResidualBlock(n_channels, 
+                            n_channels, 
+                            dropout=dropout, 
+                            has_attn=bottleneck_attention, 
+                            adaptive_weight=adaptive_weight, 
+                            fixed_weight_value=fixed_weight_value) for _ in range(num_layers)]
         )
 
     def forward(self, x: torch.Tensor):
@@ -201,6 +200,9 @@ class SRUNET_SMALL(nn.Module):
                 is_attn_layers=(False, False, False, False),
                 upsample_type='pixelshuffle_1x1',
                 downsample_type='conv_1x1',
+                adaptive_weight: bool = True,
+                fixed_weight_value: float = 1.0,
+                bottleneck_attention: bool = False
                 ):
         super().__init__()
 
@@ -214,6 +216,8 @@ class SRUNET_SMALL(nn.Module):
 
         self.upsample_type = upsample_type
         self.downsample_type = downsample_type
+        self.adaptive_weight = adaptive_weight
+        self.fixed_weight_value = fixed_weight_value
 
         self.sub_mean = MeanShift(255)
         self.add_mean = MeanShift(255, sign=1)
@@ -225,7 +229,7 @@ class SRUNET_SMALL(nn.Module):
 
         self.left_model = self.left_unet()
         self.middle_model = MiddleBlock(
-            block_out_channels[-1], dropout=self.dropout, num_layers=layers_per_block)
+            block_out_channels[-1], dropout=self.dropout, num_layers=layers_per_block, bottleneck_attention=bottleneck_attention)
         self.right_model = self.right_unet()
 
     def left_unet(self):
@@ -235,9 +239,9 @@ class SRUNET_SMALL(nn.Module):
         for i in range(len(self.block_out_channels)):
             out_channel = self.block_out_channels[i]
 
-            down_block = [DownBlock(in_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[i])] \
+            down_block = [DownBlock(in_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[i], adaptive_weight=self.adaptive_weight, fixed_weight_value=self.fixed_weight_value)] \
                 + [DownBlock(out_channel, out_channel, dropout=self.dropout,
-                             has_attn=self.is_attn_layers[i])] * (self.layers_per_block - 1)
+                             has_attn=self.is_attn_layers[i], adaptive_weight=self.adaptive_weight, fixed_weight_value=self.fixed_weight_value)] * (self.layers_per_block - 1)
             in_channel = out_channel
             left_model.append(nn.Sequential(*down_block))
             if i < len(self.block_out_channels):
@@ -253,8 +257,8 @@ class SRUNET_SMALL(nn.Module):
 
             out_channel = self.block_out_channels[i]
 
-            up_block = [UpBlock(in_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[i - 1])] \
-                + [UpBlock(out_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[i - 1])
+            up_block = [UpBlock(in_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[i - 1], adaptive_weight=self.adaptive_weight, fixed_weight_value=self.fixed_weight_value)] \
+                + [UpBlock(out_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[i - 1], adaptive_weight=self.adaptive_weight, fixed_weight_value=self.fixed_weight_value)
                    ] * (self.layers_per_block - 1)
 
             in_channel = out_channel * 2
@@ -263,8 +267,8 @@ class SRUNET_SMALL(nn.Module):
 
         in_channel, out_channel = self.block_out_channels[0] * \
             2, self.n_features
-        up_block = [UpBlock(in_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[0])] \
-            + [UpBlock(out_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[0])
+        up_block = [UpBlock(in_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[0], adaptive_weight=self.adaptive_weight, fixed_weight_value=self.fixed_weight_value)] \
+            + [UpBlock(out_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[0], adaptive_weight=self.adaptive_weight, fixed_weight_value=self.fixed_weight_value)
                ] * (self.layers_per_block - 1)
         right_unet.append(nn.Sequential(*up_block))
         return nn.ModuleList(right_unet)
