@@ -30,12 +30,16 @@ parser.add_argument('--model', type=str, default='srunet', choices=['srunet', 'm
 parser.add_argument('--loss', type=str, nargs='+', default=['mae'], help='Loss function to use', required=True)
 parser.add_argument('--loss_weight', type=float, nargs='+', default=[1.0], help='Loss weights for each loss function', required=True)
 parser.add_argument('--scale', type=int, default=4, help='Scale factor for super-resolution')
+parser.add_argument('--batch_size', type=int, default=16, help='Batch size for training')
 
 # Checkpoint - Model specific settings
 parser.add_argument('--checkpoint', type=str, default='', help='Path to model checkpoint for resuming training')
 parser.add_argument('--uptype', type=str, default='pixelshuffle_1x1', help='Upsampling type')
 parser.add_argument('--downtype', type=str, default='conv_1x1', help='Downsampling type')
 parser.add_argument('--dropout', type=float, default=0.0, help='Dropout rate')
+parser.add_argument('--channel_per_level', type=int, nargs='+', default=[64, 128, 128], help='Number of channels per level in the model')
+parser.add_argument('--attention_per_level', type=int, nargs='+', default=[0, 0, 0], help='Use attention for each level in the model')
+parser.add_argument('--num_layers_per_block', type=int, default=4, help='Number of layers per block in the model')
 
 # Additional settings
 parser.add_argument('--lora', action='store_true', help='Use LoRA for training')
@@ -60,7 +64,7 @@ training_dataset = TrainingDataset(root_paths=config['train_dataset']['root_path
                                    scale=args.scale)
 
 trainloader = DataLoader(training_dataset,
-                         batch_size= config['training_batch_size'],
+                         batch_size= args.batch_size,
                          shuffle=True,
                          num_workers=2)
 
@@ -76,25 +80,25 @@ if args.model == 'srunet':
             out_channels=3,
             n_features=64,
             dropout=0.1,
-            block_out_channels=[64, 128, 128, 256],
-            layers_per_block=4,
-            is_attn_layers=(False, False, True, False))
+            block_out_channels=args.channel_per_level,
+            layers_per_block=args.num_layers_per_block,
+            is_attn_layers=args.attention_per_level)
 elif args.model == 'mambaunet':
     model = MAMBAUNET(in_channels=3,
             out_channels=3,
-            n_features=64,
+            n_features=6,
             dropout=0.1,
-            block_out_channels=[64, 128, 128, 256],
-            layers_per_block=4,
-            is_attn_layers=(False, False, True, True))
+            block_out_channels=args.channel_per_level,
+            layers_per_block=args.num_layers_per_block,
+            is_attn_layers=args.attention_per_level)
 elif args.model == 'srunet_small':
     model = SRUNET_SMALL(in_channels=3,
             out_channels=3,
             n_features=64,
             dropout=args.dropout,
-            block_out_channels=[64, 128, 128],
-            layers_per_block=4,
-            is_attn_layers=(False, False, False),
+            block_out_channels=args.channel_per_level,
+            layers_per_block=args.num_layers_per_block,
+            is_attn_layers=args.attention_per_level,
             upsample_type=args.uptype,
             downsample_type=args.downtype,
             )
