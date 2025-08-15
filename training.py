@@ -221,7 +221,6 @@ for epoch in range(start_point, max_epoch):
 
         psnr, ssim = 0, 0
         pics = []
-        inference_times = []
         for filename, img_lr, img_hr in progress_bar:
             img_lr, img_hr = img_lr.to(device), img_hr.to(device)
             # Padding
@@ -229,7 +228,6 @@ for epoch in range(start_point, max_epoch):
             start_infer = time.time()
             img_pred = model(img_lr).clip(0, 1)
             infer_time = time.time() - start_infer
-            inference_times.append(infer_time)
             img_pred = remove_padding(img_pred, mod_pad_h, mod_pad_w)
             img_lr = remove_padding(img_lr, mod_pad_h, mod_pad_w)
             # print(filename, img_pred.shape, img_hr.shape, img_lr.shape)
@@ -245,10 +243,6 @@ for epoch in range(start_point, max_epoch):
 
             images = make_grid([img_lr, img_pred, img_hr], nrow=3)
             pics.append((filename[0], images))
-
-        avg_infer_time = sum(inference_times) / len(inference_times) if inference_times else 0
-        writer.add_scalar('Testing/Avg_Inference_Time', avg_infer_time, epoch)
-        print(f"Average inference time per image: {avg_infer_time:.4f} seconds")
 
         if psnr/len(validloader) > psnr_max:
             if not os.path.exists(os.path.join(config['train_model']['save_path'], args.exp_name)):
@@ -288,4 +282,3 @@ for epoch in range(start_point, max_epoch):
 
         print(f"Epoch: {epoch} | PSNR: {psnr / len(validloader)} | SSIM: {ssim / len(validloader)} | Max_Epoch: {max_psnr_epoch} | PSNR_max: {psnr_max}")
         logging.info(f"Time: {time.strftime('%Y-%m-%d %H:%M:%S')} | Epoch: {epoch} | PSNR: {psnr / len(validloader)} | SSIM: {ssim / len(validloader)} | Max_Epoch: {max_psnr_epoch} | PSNR_max: {psnr_max}")
-        logging.info(f"Average inference time per image: {avg_infer_time:.4f} seconds")
