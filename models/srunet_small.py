@@ -32,6 +32,39 @@ class AttentionBlock(nn.Module):
 
         return x + h
 
+class SelfEnhancementBlock(nn.Module):
+    def __init__(self, in_ch, reduction=16):
+        super().__init__()
+        self.se = nn.Sequential(
+            nn.Conv2d(in_ch, in_ch // reduction, 1, stride=1, padding=0),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_ch // reduction, in_ch, 1, stride=1, padding=0),
+        )
+        self.shared_conv = nn.Sequential(
+            nn.Conv2d(in_ch // 2, in_ch // 2, 1, stride=1, padding=0),
+            nn.ReLU(inplace=True),
+        )
+
+    def forward(self, x: torch.Tensor):
+        B, C, H, W = x.shape
+
+        msws = self.se(x)
+        msws = msws.view(B, C, H * W)
+
+        # Split the tensor into two halves along the channel dimension
+        a, b = x.split(C // 2, dim=1)
+        a = self.shared_conv(a)
+        b = self.shared_conv(b)
+
+        a = a.permute(0, 2, 3, 1).view(B, H * W, C // 2)
+        b = b.view(B, C // 2, H * W)
+
+        result = torch.bmm(msws, a)
+        result = torch.bmm(result, b)
+        result = result.view(B, H, W, C).permute(0, 3, 1, 2)
+
+        return result
+
 # Channel Attention (CBAM style) Layer
 class CBAMLayer(nn.Module):
     def __init__(self, channels, reduction=16):
