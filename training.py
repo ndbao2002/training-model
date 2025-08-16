@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser(description='Training script for super-resoluti
 
 # Experiment settings
 parser.add_argument('--exp_name', type=str, default='srunet', help='Experiment name')
-parser.add_argument('--model', type=str, default='srunet', choices=['srunet', 'mambaunet', 'srunet_small'], help='Model to train', required=True)
+parser.add_argument('--model', type=str, default='srunet', help='Model to train', required=True)
 parser.add_argument('--loss', type=str, nargs='+', default=['mae'], help='Loss function to use', required=True)
 parser.add_argument('--loss_weight', type=float, nargs='+', default=[1.0], help='Loss weights for each loss function', required=True)
 parser.add_argument('--scale', type=int, default=4, help='Scale factor for super-resolution')
