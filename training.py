@@ -4,6 +4,7 @@ from dataloader import TrainingDataset, TestingDataset
 from models.lora_utils import freeze_model, freeze_model_except_lora, replace_resblocks_with_lora
 from models.quantization import dynamic_quantization, static_quantization
 from models.srunet_small import SRUNET_SMALL
+from models.srunet_small_adaptive_v2 import SRUNET_SMALL_V2
 from models.swinir import SwinIR
 from models.srunet import SRUNET
 from models.mambaunet import MAMBAUNET
@@ -96,6 +97,20 @@ elif args.model == 'mambaunet':
             is_attn_layers=args.attention_per_level)
 elif args.model == 'srunet_small':
     model = SRUNET_SMALL(in_channels=3,
+            out_channels=3,
+            n_features=64,
+            dropout=args.dropout,
+            block_out_channels=args.channel_per_level,
+            layers_per_block=args.num_layers_per_block,
+            is_attn_layers=args.attention_per_level,
+            upsample_type=args.uptype,
+            downsample_type=args.downtype,
+            adaptive_weight=args.adaptive_weight,
+            fixed_weight_value=args.fixed_weight_value,
+            bottleneck_attention=args.bottleneck_attention
+            )
+elif args.model == 'srunet_small_v2':
+        model = SRUNET_SMALL_V2(in_channels=3,
             out_channels=3,
             n_features=64,
             dropout=args.dropout,
