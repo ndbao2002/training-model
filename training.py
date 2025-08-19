@@ -4,7 +4,7 @@ from dataloader import TrainingDataset, TestingDataset
 from models.lora_utils import freeze_model, freeze_model_except_lora, replace_resblocks_with_lora
 from models.quantization import dynamic_quantization, static_quantization
 from models.srunet_small import SRUNET_SMALL
-from models.srunet_small_adaptive_v2 import SRUNET_SMALL_V2
+from models.srunet_small_v2 import SRUNET_SMALL_V2
 from models.swinir import SwinIR
 from models.srunet import SRUNET
 from models.mambaunet import MAMBAUNET
