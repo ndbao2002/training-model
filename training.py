@@ -38,6 +38,7 @@ parser.add_argument('--checkpoint', type=str, default='', help='Path to model ch
 parser.add_argument('--uptype', type=str, default='pixelshuffle_1x1', help='Upsampling type')
 parser.add_argument('--downtype', type=str, default='conv_1x1', help='Downsampling type')
 parser.add_argument('--dropout', type=float, default=0.0, help='Dropout rate')
+parser.add_argument('--n_features', type=int, default=64, help='Number of features in the model')
 parser.add_argument('--channel_per_level', type=int, nargs='+', default=[64, 128, 128], help='Number of channels per level in the model')
 parser.add_argument('--attention_per_level', type=int, nargs='+', default=[0, 0, 0], help='Use attention for each level in the model')
 parser.add_argument('--num_layers_per_block', type=int, default=4, help='Number of layers per block in the model')
@@ -82,7 +83,7 @@ print('Creating Model ...')
 if args.model == 'srunet':
     model = SRUNET(in_channels=3,
             out_channels=3,
-            n_features=64,
+            n_features=args.n_features,
             dropout=0.1,
             block_out_channels=args.channel_per_level,
             layers_per_block=args.num_layers_per_block,
@@ -98,7 +99,7 @@ elif args.model == 'mambaunet':
 elif args.model == 'srunet_small':
     model = SRUNET_SMALL(in_channels=3,
             out_channels=3,
-            n_features=64,
+            n_features=args.n_features,
             dropout=args.dropout,
             block_out_channels=args.channel_per_level,
             layers_per_block=args.num_layers_per_block,
@@ -112,7 +113,7 @@ elif args.model == 'srunet_small':
 elif args.model == 'srunet_small_v2':
         model = SRUNET_SMALL_V2(in_channels=3,
             out_channels=3,
-            n_features=64,
+            n_features=args.n_features,
             dropout=args.dropout,
             block_out_channels=args.channel_per_level,
             layers_per_block=args.num_layers_per_block,
