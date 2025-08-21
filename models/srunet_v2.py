@@ -8,10 +8,12 @@ class SelfEnhancementBlock(nn.Module):
             nn.Conv2d(in_ch, in_ch // reduction, 1, stride=1, padding=0),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_ch // reduction, in_ch, 1, stride=1, padding=0),
+            nn.GroupNorm(32, in_ch),
         )
         self.shared_conv = nn.Sequential(
             nn.Conv2d(in_ch // 2, in_ch // 2, 1, stride=1, padding=0),
             nn.ReLU(inplace=True),
+            nn.GroupNorm(32, in_ch // 2)
         )
 
     def forward(self, x: torch.Tensor):
