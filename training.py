@@ -46,6 +46,7 @@ parser.add_argument('--num_layers_per_block', type=int, default=4, help='Number 
 parser.add_argument('--adaptive_weight', action='store_true', help='Use adaptive weight for residual blocks')
 parser.add_argument('--fixed_weight_value', type=float, default=1.0, help='Fixed weight value for residual blocks')
 parser.add_argument('--bottleneck_attention', action='store_true', help='Use bottleneck attention for residual blocks')
+parser.add_argument('--local_conv', type=str, default='conv_1x1', help='Local convolution type')
 
 # Additional settings
 parser.add_argument('--lora', action='store_true', help='Use LoRA for training')
@@ -131,7 +132,8 @@ elif args.model == 'srunet_small_v2':
             downsample_type=args.downtype,
             adaptive_weight=args.adaptive_weight,
             fixed_weight_value=args.fixed_weight_value,
-            bottleneck_attention=args.bottleneck_attention
+            bottleneck_attention=args.bottleneck_attention,
+            local_conv=args.local_conv
             )
 else:
     raise ValueError(f"Model {args.model} is not supported")
