@@ -148,7 +148,7 @@ class ResidualBlock(nn.Module):
         h = self.norm1(F.silu(self.conv(x)))
         h = self.norm2(F.silu(self.cbam(h)))
         h = self.dropout(h)
-        return self.attn(h) + self.shortcut(x) * self.weight
+        return self.attn(h) * self.weight + self.shortcut(x) 
 
 class DownBlock(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, has_attn: bool, dropout: int, adaptive_weight: bool = True, fixed_weight_value: float = 1.0, local_conv: str = 'conv_1x1'):
