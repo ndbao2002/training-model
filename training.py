@@ -252,9 +252,7 @@ for epoch in range(start_point, max_epoch):
             img_lr, img_hr = img_lr.to(device), img_hr.to(device)
             # Padding
             img_lr, mod_pad_h, mod_pad_w = find_padding(img_lr, window_size=2**4)
-            start_infer = time.time()
             img_pred = model(img_lr).clip(0, 1)
-            infer_time = time.time() - start_infer
             img_pred = remove_padding(img_pred, mod_pad_h, mod_pad_w)
             img_lr = remove_padding(img_lr, mod_pad_h, mod_pad_w)
             # print(filename, img_pred.shape, img_hr.shape, img_lr.shape)
