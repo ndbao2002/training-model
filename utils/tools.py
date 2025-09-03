@@ -108,7 +108,7 @@ def plot_images(images, nrows=1, ncols=None, titles=None, cmaps=None, figsize=(1
     plt.tight_layout()
     return fig
 
-def forward_chop(model, x, scale, shave=10, min_size=160000) -> torch.Tensor:
+def forward_chop(model, x, scale=1, shave=10, min_size=120000) -> torch.Tensor:
         n_GPUs = 1
         b, c, h, w = x.size()
         h_half, w_half = h // 2, w // 2
@@ -123,7 +123,9 @@ def forward_chop(model, x, scale, shave=10, min_size=160000) -> torch.Tensor:
             sr_list = []
             for i in range(0, 4, n_GPUs):
                 lr_batch = torch.cat(lr_list[i:(i + n_GPUs)], dim=0)
+                lr_batch, mod_pad_h, mod_pad_w = find_padding(lr_batch, window_size=2**4)
                 sr_batch = model(lr_batch)
+                sr_batch = remove_padding(sr_batch, mod_pad_h, mod_pad_w)
                 sr_list.extend(sr_batch.chunk(n_GPUs, dim=0))
         else:
             sr_list = [

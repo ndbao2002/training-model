@@ -254,7 +254,7 @@ for epoch in range(start_point, max_epoch):
             # Padding
             img_lr, mod_pad_h, mod_pad_w = find_padding(img_lr, window_size=2**4)
             if args.chop:
-                img_pred = forward_chop(model, img_lr, scale=args.scale, shave=10, min_size=160000).clip(0, 1)
+                img_pred = forward_chop(model, img_lr).clip(0, 1)
             else:
                 img_pred = model(img_lr).clip(0, 1)
             img_pred = remove_padding(img_pred, mod_pad_h, mod_pad_w)
