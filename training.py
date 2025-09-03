@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 import yaml
 
-from utils.tools import find_padding, remove_padding
+from utils.tools import find_padding, forward_chop, remove_padding
 from loss.content_loss import ContentLoss
 # from loss.gan_loss import GANLoss
 import torch
@@ -49,6 +49,7 @@ parser.add_argument('--bottleneck_attention', action='store_true', help='Use bot
 parser.add_argument('--local_conv', type=str, default='conv_1x1', help='Local convolution type')
 
 # Additional settings
+parser.add_argument('--chop', action='store_true', help='Enable memory-efficient forward')
 parser.add_argument('--lora', action='store_true', help='Use LoRA for training')
 parser.add_argument('--lora_rank', type=int, default=4, help='Rank for LoRA layers')
 parser.add_argument('--lora_alpha', type=float, default=1.0, help='Alpha for LoRA layers')
@@ -252,7 +253,10 @@ for epoch in range(start_point, max_epoch):
             img_lr, img_hr = img_lr.to(device), img_hr.to(device)
             # Padding
             img_lr, mod_pad_h, mod_pad_w = find_padding(img_lr, window_size=2**4)
-            img_pred = model(img_lr).clip(0, 1)
+            if args.chop:
+                img_pred = forward_chop(model, img_lr, scale=args.scale, shave=10, min_size=160000).clip(0, 1)
+            else:
+                img_pred = model(img_lr).clip(0, 1)
             img_pred = remove_padding(img_pred, mod_pad_h, mod_pad_w)
             img_lr = remove_padding(img_lr, mod_pad_h, mod_pad_w)
             # print(filename, img_pred.shape, img_hr.shape, img_lr.shape)
