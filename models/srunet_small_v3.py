@@ -67,15 +67,17 @@ class SALayer(nn.Module):
         return x * self.sigmoid(out)
 
 class CBAMLayer(nn.Module):
-    def __init__(self, channels, reduction=16, kernel_size=7):
+    def __init__(self, in_channels, out_channels, reduction=16, kernel_size=7):
         super(CBAMLayer, self).__init__()
-        self.channel_att = CALayer(channels, reduction)
+        self.channel_att = CALayer(in_channels, reduction)
         self.spatial_att = SALayer(kernel_size)
+        self.shortcut = nn.Conv2d(in_channels, out_channels, kernel_size=1) \
+            if in_channels != out_channels else nn.Identity()
 
     def forward(self, x):
         x = self.channel_att(x)
         x = self.spatial_att(x)
-        return x
+        return self.shortcut(x)
 
 class ResidualBlock(nn.Module):
     def __init__(self,
@@ -89,7 +91,7 @@ class ResidualBlock(nn.Module):
                  local_conv: str = 'conv_1x1'):
         super().__init__()
 
-        self.cbam = CBAMLayer(out_channels)
+        self.cbam = CBAMLayer(in_channels, out_channels)
         if local_conv == 'conv_1x1':
             self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
         elif local_conv == 'conv_3x3':
