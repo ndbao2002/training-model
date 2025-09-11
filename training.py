@@ -48,6 +48,7 @@ parser.add_argument('--adaptive_weight', action='store_true', help='Use adaptive
 parser.add_argument('--fixed_weight_value', type=float, default=1.0, help='Fixed weight value for residual blocks')
 parser.add_argument('--bottleneck_attention', action='store_true', help='Use bottleneck attention for residual blocks')
 parser.add_argument('--local_conv', type=str, default='conv_1x1', help='Local convolution type')
+parser.add_argument('--img_range', type=float, default=255, help='Image range for normalization')
 
 # Additional settings
 parser.add_argument('--chop', action='store_true', help='Enable memory-efficient forward')
@@ -150,7 +151,8 @@ elif args.model == 'srunet_small_v3':
             adaptive_weight=args.adaptive_weight,
             fixed_weight_value=args.fixed_weight_value,
             bottleneck_attention=args.bottleneck_attention,
-            local_conv=args.local_conv
+            local_conv=args.local_conv,
+            img_range=args.img_range
             )
 else:
     raise ValueError(f"Model {args.model} is not supported")

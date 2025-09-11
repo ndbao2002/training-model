@@ -238,7 +238,8 @@ class SRUNET_SMALL_V3(nn.Module):
                 adaptive_weight: bool = True,
                 fixed_weight_value: float = 1.0,
                 bottleneck_attention: bool = False,
-                local_conv: str = 'conv_1x1'
+                local_conv: str = 'conv_1x1',
+                img_range = 255
                 ):
         super().__init__()
 
@@ -257,8 +258,9 @@ class SRUNET_SMALL_V3(nn.Module):
         self.adaptive_weight = adaptive_weight
         self.fixed_weight_value = fixed_weight_value
 
-        self.sub_mean = MeanShift(255)
-        self.add_mean = MeanShift(255, sign=1)
+        self.img_range = img_range
+        self.sub_mean = MeanShift(img_range)
+        self.add_mean = MeanShift(img_range, sign=1)
 
         self.shallow_feature_extraction = nn.Conv2d(
             in_channels, n_features, kernel_size=3, padding=1)
@@ -320,7 +322,7 @@ class SRUNET_SMALL_V3(nn.Module):
         return nn.ModuleList(right_unet)
 
     def forward(self, x):
-        x = x * 255
+        x = x * self.img_range
         x = self.sub_mean(x)
 
         feature_maps = self.shallow_feature_extraction(x)
@@ -353,5 +355,5 @@ class SRUNET_SMALL_V3(nn.Module):
                 # print('UP-RES::: ', recover.shape)
 
         recover = self.image_rescontruction(recover)
-        recover = self.add_mean(recover) / 255
+        recover = self.add_mean(recover) / self.img_range
         return recover
