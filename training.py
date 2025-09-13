@@ -6,6 +6,7 @@ from models.quantization import dynamic_quantization, static_quantization
 from models.srunet_small import SRUNET_SMALL
 from models.srunet_small_v2 import SRUNET_SMALL_V2
 from models.srunet_small_v3 import SRUNET_SMALL_V3
+from models.srunet_small_v4 import SRUNET_SMALL_V4
 from models.srunet_v2 import SRUNET_V2
 from models.swinir import SwinIR
 from models.srunet import SRUNET
@@ -93,36 +94,6 @@ if args.model == 'srunet':
             block_out_channels=args.channel_per_level,
             layers_per_block=args.num_layers_per_block,
             is_attn_layers=args.attention_per_level)
-elif args.model == 'srunet_v2':
-    model = SRUNET_V2(in_channels=3,
-            out_channels=3,
-            n_features=args.n_features,
-            dropout=args.dropout,
-            block_out_channels=args.channel_per_level,
-            layers_per_block=args.num_layers_per_block,
-            is_attn_layers=args.attention_per_level)
-elif args.model == 'mambaunet':
-    model = MAMBAUNET(in_channels=3,
-            out_channels=3,
-            n_features=6,
-            dropout=0.1,
-            block_out_channels=args.channel_per_level,
-            layers_per_block=args.num_layers_per_block,
-            is_attn_layers=args.attention_per_level)
-elif args.model == 'srunet_small':
-    model = SRUNET_SMALL(in_channels=3,
-            out_channels=3,
-            n_features=args.n_features,
-            dropout=args.dropout,
-            block_out_channels=args.channel_per_level,
-            layers_per_block=args.num_layers_per_block,
-            is_attn_layers=args.attention_per_level,
-            upsample_type=args.uptype,
-            downsample_type=args.downtype,
-            adaptive_weight=args.adaptive_weight,
-            fixed_weight_value=args.fixed_weight_value,
-            bottleneck_attention=args.bottleneck_attention
-            )
 elif args.model == 'srunet_small_v2':
         model = SRUNET_SMALL_V2(in_channels=3,
             out_channels=3,
@@ -140,6 +111,22 @@ elif args.model == 'srunet_small_v2':
             )
 elif args.model == 'srunet_small_v3':
         model = SRUNET_SMALL_V3(in_channels=3,
+            out_channels=3,
+            n_features=args.n_features,
+            dropout=args.dropout,
+            block_out_channels=args.channel_per_level,
+            layers_per_block=args.num_layers_per_block,
+            is_attn_layers=args.attention_per_level,
+            upsample_type=args.uptype,
+            downsample_type=args.downtype,
+            adaptive_weight=args.adaptive_weight,
+            fixed_weight_value=args.fixed_weight_value,
+            bottleneck_attention=args.bottleneck_attention,
+            local_conv=args.local_conv,
+            img_range=args.img_range
+            )
+elif args.model == 'srunet_small_v4':
+        model = SRUNET_SMALL_V4(in_channels=3,
             out_channels=3,
             n_features=args.n_features,
             dropout=args.dropout,
