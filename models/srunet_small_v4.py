@@ -326,19 +326,19 @@ class SRUNET_SMALL_V4(nn.Module):
 
             out_channel = self.block_out_channels[i]
 
-            up_block = [UpBlock(in_channel, out_channel, dropout=self.dropout, has_attn=is_attn,
+            up_block = UpBlock(in_channel, out_channel, dropout=self.dropout, has_attn=is_attn,
                                 adaptive_weight=self.adaptive_weight, fixed_weight_value=self.fixed_weight_value, local_conv=self.local_conv,
-                                layers_per_block=self.layers_per_block)]
+                                layers_per_block=self.layers_per_block)
 
             in_channel = out_channel * 2
-            right_unet.append(nn.Sequential(*up_block))
+            right_unet.append(up_block)
             right_unet.append(Upsample(out_channel, uptype=self.upsample_type))
 
         in_channel, out_channel = self.block_out_channels[0] * \
             2, self.n_features
-        up_block = [UpBlock(in_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[0],
+        up_block = UpBlock(in_channel, out_channel, dropout=self.dropout, has_attn=self.is_attn_layers[0],
                             adaptive_weight=self.adaptive_weight, fixed_weight_value=self.fixed_weight_value, local_conv=self.local_conv,
-                            layers_per_block=self.layers_per_block)]
+                            layers_per_block=self.layers_per_block)
         right_unet.append(up_block)
         return nn.ModuleList(right_unet)
 
@@ -375,7 +375,7 @@ class SRUNET_SMALL_V4(nn.Module):
                 recover = block(recover)
                 # print('UP-RES::: ', recover.shape)
 
-        recover = self.image_rescontruction(recover)
         recover = feature_maps + recover # global residual
+        recover = self.image_rescontruction(recover)
         recover = self.add_mean(recover) / self.img_range
         return recover
