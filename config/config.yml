@@ -17,6 +17,6 @@ logger:
 train_model:
   learning_rate: 0.0002
   checkpoint: pretrained/best_model.pt
-  max_epoch: 600
+  max_epoch: 550
   save_path: pretrained
   activate: False
