@@ -96,6 +96,41 @@ class TestingDataset(Dataset):
         img_lr = self.transform(img_lr)
 
         return filename, img_lr, img_hr
+    
+class TestingDatasetSingle(Dataset):
+    def __init__(self, hr_root, lr_root):
+        self.hr_files = sorted(glob.glob(hr_root + "/*"))
+        self.lr_files = sorted(glob.glob(lr_root + "/*"))
+        assert len(self.hr_files) == len(self.lr_files), "The number of HR and LR images must be the same."
+
+        self.transform = transforms.Compose([
+            transforms.ToImage(),
+            transforms.ToDtype(torch.float32, scale=True),
+        ])
+
+    def __len__(self):
+        return len(self.hr_files)
+
+    def __getitem__(self, idx):
+        filename_hr = os.path.basename(self.hr_files[idx])
+        filename_lr = os.path.basename(self.lr_files[idx])
+
+        img_hr = Image.open(self.hr_files[idx]).convert("RGB")
+        img_lr = Image.open(self.lr_files[idx]).convert("RGB")
+
+        h_hr, w_hr = img_hr.size
+        
+        img_hr = Image.fromarray(np.array(img_hr)[:w_hr, :h_hr, ...]) 
+        img_lr = img_lr.resize((h_hr, w_hr), resample=Image.BICUBIC)
+
+
+        img_lr = np.array(img_lr)[:w_hr, :h_hr, ...]
+        
+
+        img_hr = self.transform(img_hr)
+        img_lr = self.transform(img_lr)
+
+        return filename_hr, img_lr, img_hr
 
 if __name__ == '__main__':
     from utils.tools import plot_images
